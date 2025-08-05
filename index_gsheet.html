@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Aset ICT</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h1 { color: #2c3e50; }
+    .menu { margin-bottom: 20px; }
+    button { margin-right: 10px; padding: 10px 15px; cursor: pointer; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    select { margin-right: 10px; padding: 5px; }
+    #formSection { display: none; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Dashboard Aset ICT</h1>
+  <div class="menu">
+    <button onclick="showForm()">Isi Maklumat Aset</button>
+    <button onclick="showTable()">Papar Maklumat Aset</button>
+  </div>
+
+  <div id="filterSection">
+    <label>Jenis Peralatan:</label>
+    <select id="filterJenis"></select>
+
+    <label>Tahun:</label>
+    <select id="filterTahun"></select>
+  </div>
+
+  <table id="asetTable">
+    <thead id="tableHead"></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <div id="formSection">
+    <h3>Borang Isi Maklumat Aset</h3>
+    <p><i>(Fungsi tambah data belum diaktifkan dalam versi demo ini)</i></p>
+  </div>
+
+  <script>
+    let data = [];
+
+    function showForm() {
+      document.getElementById('formSection').style.display = 'block';
+      document.getElementById('asetTable').style.display = 'none';
+      document.getElementById('filterSection').style.display = 'none';
+    }
+
+    function showTable() {
+      document.getElementById('formSection').style.display = 'none';
+      document.getElementById('asetTable').style.display = 'table';
+      document.getElementById('filterSection').style.display = 'block';
+    }
+
+    function loadCSV(url) {
+      fetch(url)
+        .then(response => response.text())
+        .then(csv => {
+          const [headerLine, ...lines] = csv.trim().split('\n');
+          const headers = headerLine.split(',');
+          data = lines.map(line => Object.fromEntries(line.split(',').map((v, i) => [headers[i], v])));
+          populateFilters();
+          renderTable(data);
+        });
+    }
+
+    function populateFilters() {
+      const jenisSet = new Set(data.map(row => row["Jenis Peralatan"]));
+      const tahunSet = new Set(data.map(row => row["Tahun"]));
+
+      const jenisDropdown = document.getElementById("filterJenis");
+      const tahunDropdown = document.getElementById("filterTahun");
+
+      jenisDropdown.innerHTML = '<option value="">Semua</option>' + [...jenisSet].sort().map(j => `<option value="${j}">${j}</option>`).join('');
+      tahunDropdown.innerHTML = '<option value="">Semua</option>' + [...tahunSet].sort().map(t => `<option value="${t}">${t}</option>`).join('');
+
+      jenisDropdown.onchange = filterData;
+      tahunDropdown.onchange = filterData;
+    }
+
+    function filterData() {
+      const jenis = document.getElementById("filterJenis").value;
+      const tahun = document.getElementById("filterTahun").value;
+
+      const filtered = data.filter(row => {
+        return (!jenis || row["Jenis Peralatan"] === jenis) && (!tahun || row["Tahun"] === tahun);
+      });
+
+      renderTable(filtered);
+    }
+
+    function renderTable(rows) {
+      const tableHead = document.getElementById("tableHead");
+      const tableBody = document.getElementById("tableBody");
+
+      if (rows.length === 0) {
+        tableHead.innerHTML = '';
+        tableBody.innerHTML = '<tr><td colspan="5">Tiada data dijumpai.</td></tr>';
+        return;
+      }
+
+      const headers = Object.keys(rows[0]);
+      tableHead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+      tableBody.innerHTML = rows.map(row => {
+        return '<tr>' + headers.map(h => `<td>${row[h]}</td>`).join('') + '</tr>';
+      }).join('');
+    }
+
+    loadCSV("maklumat_aset_ict_bersih.csv");
+  </script>
+</body>
+</html>
