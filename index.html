@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Dashboard Aset ICT</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { text-align: center; }
+        .controls { margin-bottom: 20px; }
+        select { margin-right: 10px; padding: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Dashboard Aset ICT</h1>
+
+    <div class="controls">
+        <label for="jenis">Jenis Peralatan:</label>
+        <select id="jenis" onchange="filterTable()">
+            <option value="">Semua</option>
+        </select>
+
+        <label for="tahun">Tahun:</label>
+        <select id="tahun" onchange="filterTable()">
+            <option value="">Semua</option>
+        </select>
+    </div>
+
+    <table id="asetTable">
+        <thead>
+            <tr id="tableHead"></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+    <script>
+        const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSU3_JkLKNgPzEaYWMjfPC-lC3EdwbOPN_FPJ6pMFr7eUxGSEqMM7w-IvrK0-dwpUqIL5-Xv6p5Dp7f/pub?output=csv";
+        let originalData = [];
+
+        Papa.parse(sheetURL, {
+            download: true,
+            header: true,
+            complete: function(results) {
+                originalData = results.data;
+                populateFilters();
+                renderTable(originalData);
+            }
+        });
+
+        function populateFilters() {
+            const jenisSet = new Set();
+            const tahunSet = new Set();
+
+            originalData.forEach(row => {
+                if (row["JENIS PERALATAN"]) jenisSet.add(row["JENIS PERALATAN"]);
+                if (row["TAHUN"]) tahunSet.add(row["TAHUN"]);
+            });
+
+            const jenisSelect = document.getElementById("jenis");
+            jenisSet.forEach(j => {
+                const opt = document.createElement("option");
+                opt.value = j;
+                opt.textContent = j;
+                jenisSelect.appendChild(opt);
+            });
+
+            const tahunSelect = document.getElementById("tahun");
+            Array.from(tahunSet).sort().forEach(t => {
+                const opt = document.createElement("option");
+                opt.value = t;
+                opt.textContent = t;
+                tahunSelect.appendChild(opt);
+            });
+        }
+
+        function filterTable() {
+            const jenis = document.getElementById("jenis").value;
+            const tahun = document.getElementById("tahun").value;
+
+            const filtered = originalData.filter(row => {
+                return (jenis === "" || row["JENIS PERALATAN"] === jenis) &&
+                       (tahun === "" || row["TAHUN"] === tahun);
+            });
+
+            renderTable(filtered);
+        }
+
+        function renderTable(data) {
+            const head = document.getElementById("tableHead");
+            const body = document.getElementById("tableBody");
+            head.innerHTML = "";
+            body.innerHTML = "";
+
+            if (data.length === 0) return;
+
+            // Create headers
+            Object.keys(data[0]).forEach(key => {
+                const th = document.createElement("th");
+                th.textContent = key;
+                head.appendChild(th);
+            });
+
+            // Create rows
+            data.forEach(row => {
+                const tr = document.createElement("tr");
+                Object.values(row).forEach(val => {
+                    const td = document.createElement("td");
+                    td.textContent = val;
+                    tr.appendChild(td);
+                });
+                body.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
